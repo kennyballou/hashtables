@@ -1,5 +1,8 @@
 package adts;
 
+import java.util.List;
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.Optional;
 import java.util.stream.Stream;
 import java.util.stream.Collectors;
@@ -35,7 +38,7 @@ public class HashTable implements ADT {
     }
 
     private final int size;
-    private KV[] table;
+    private List<List<KV>> table;
 
     public HashTable() {
         this(10);
@@ -43,40 +46,56 @@ public class HashTable implements ADT {
 
     public HashTable(int size) {
         this.size = size;
-        this.table = new KV[size];
+        this.table = new ArrayList<>(this.size);
+        for (int i = 0; i < this.size; i++) {
+            this.table.add(new LinkedList<KV>());
+        }
     }
 
     private int hash(String key) {
-        return key.hashCode() % this.size;
+        return Math.abs(key.hashCode()) % this.size;
     }
 
     public void add(String key, int value) {
         int k = hash(key);
-        table[k] = new KV(key, value);
+        table.get(k).add(new KV(key, value));
     }
 
     public Optional<Integer> get(String key) {
         int k = hash(key);
-        return Optional.ofNullable(table[k])
-            .map(kv -> kv.value);
+        for (KV kv : table.get(k)) {
+            if (kv.key.equals(key)) {
+                return Optional.of(kv.value);
+            }
+        }
+        return Optional.empty();
     }
 
     public Optional<Integer> remove(String key) {
         int k = hash(key);
-        Optional<Integer> value = Optional.ofNullable(table[k])
-            .map(kv -> kv.value);
-        table[k] = null;
-        return value;
+        List<KV> list = table.get(k);
+        for (KV kv : list) {
+            if (kv.key.equals(key)) {
+                list.remove(kv);
+                return Optional.of(kv.value);
+            }
+        }
+        return Optional.empty();
     }
 
     public boolean contains(String key) {
         int k = hash(key);
-        return table[k] != null;
+        for (KV kv : table.get(k)) {
+            if (kv.key.equals(key)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
     public String toString() {
-        return Stream.of(this.table)
+        return this.table.stream()
             .filter(kv -> kv != null)
             .map(kv -> kv.toString())
             .collect(Collectors.joining(", ", "{", "}"));
